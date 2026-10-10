@@ -2,7 +2,9 @@ package me.tx.composetester.biz
 
 import me.tx.composetester.base.ComposHttpResponse
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 interface BizApi {
     @POST("api/auth/login")
@@ -10,4 +12,10 @@ interface BizApi {
 
     @POST("api/auth/logout")
     suspend fun logout(): ComposHttpResponse<LogoutResponse>
+
+    @GET("api/user/userList")
+    suspend fun userList(
+        @Query("page") page: Int,
+        @Query("size") size: Int
+    ): ComposHttpResponse<List<User>>
 }

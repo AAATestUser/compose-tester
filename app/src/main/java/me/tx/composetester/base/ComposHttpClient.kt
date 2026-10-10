@@ -44,19 +44,36 @@ object ComposHttpClient {
         request: K,
         endpoint: suspend (K) -> ComposHttpResponse<T>,
         defaultValue: () -> T,
-        onResult: (T) -> Unit
+        onResult: (T) -> Unit,
+        onFailed: (code: Int, message: String) -> Unit
     ) {
-        request(
+        execute(
             call = { endpoint(request) },
-            onResult = { response ->
-                onResult(response.data ?: defaultValue())
-            }
+            defaultValue = defaultValue,
+            onResult = onResult,
+            onFailed = onFailed
         )
     }
 
-    fun <T> request(
+    fun <T> call(
+        endpoint: suspend () -> ComposHttpResponse<T>,
+        defaultValue: () -> T,
+        onResult: (T) -> Unit,
+        onFailed: (code: Int, message: String) -> Unit
+    ) {
+        execute(
+            call = endpoint,
+            defaultValue = defaultValue,
+            onResult = onResult,
+            onFailed = onFailed
+        )
+    }
+
+    private fun <T> execute(
         call: suspend () -> ComposHttpResponse<T>,
-        onResult: (ComposHttpResponse<T>) -> Unit
+        defaultValue: () -> T,
+        onResult: (T) -> Unit,
+        onFailed: (code: Int, message: String) -> Unit
     ) {
         requestScope.launch {
             val response = try {
@@ -73,7 +90,11 @@ object ComposHttpClient {
                 )
             }
             withContext(Dispatchers.Main) {
-                onResult(response)
+                if (response.code == 200) {
+                    onResult(response.data ?: defaultValue())
+                } else {
+                    onFailed(response.code, response.message)
+                }
             }
         }
     }
